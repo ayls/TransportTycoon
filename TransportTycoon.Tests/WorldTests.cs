@@ -1,30 +1,28 @@
-using System;
 using System.Linq;
 using Xunit;
 
 namespace TransportTycoon.Tests
 {
-    public class WorldTests
+    public class SolutionTests
     {
         [Theory]
         [InlineData("A", 5)]
-        //[InlineData("AB", 5)]
-        //[InlineData("BB", 5)]
-        //[InlineData("ABB", 7)]
-        //[InlineData("AABABBAB", )]
-        //[InlineData("AAAABBBB", )]
-        //[InlineData("BBBBAAAA", )]
-        //[InlineData("ABBBABAAABBB", )]
+        [InlineData("B", 5)]
+        [InlineData("AB", 5)]
+        [InlineData("BB", 5)]
+        [InlineData("ABB", 7)]
+        [InlineData("ABBA", 15)]
+        [InlineData("AAAABBBB", 29)]
         public void ShouldDeliver(string destinations, int durationTimeInHours)
         {
             // Arrange
-            var world = new World(destinations.Select(x => x.ToString()));
+            var solution = new World(destinations.Select(x => x.ToString()));
 
             // Act
-            world.Deliver();
+            solution.Deliver();
 
             // Assert
-            Assert.Equal(TimeSpan.FromHours(durationTimeInHours), world.CurrentTime);
+            Assert.Equal(durationTimeInHours, solution.CurrentTime);
         }
     }
 }

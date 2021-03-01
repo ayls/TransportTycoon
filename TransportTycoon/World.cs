@@ -6,73 +6,51 @@ namespace TransportTycoon
 {
     public class World
     {
-        private Location factory;
-        private Location warehouseA;
-        private Location warehouseB;
-        private Location port;
-        private int containerToDeliever;
-        private Vehicle _truck1;
-        private Vehicle _truck2;
-        private Vehicle _boat;
+        private readonly IEnumerable<string> destinations;
+        private readonly Warehouse factory;
+        private readonly Warehouse port;
+        private readonly Warehouse warehouseA;
+        private readonly Warehouse warehouseB;
+        private readonly Vehicle truck1;
+        private readonly Vehicle truck2;
+        private readonly Vehicle ship;
+        private readonly TimeTracker timeTracker;
 
-        public World(IEnumerable<string> containerDestinations)
+        public World(IEnumerable<string> destinations)
         {
-            containerToDeliever = containerDestinations.Count();
-            factory = new Location("Factory");
-            warehouseA = new Location("A");
-            warehouseB = new Location("B");
-            port = new Location("Port");
-
-            var factoryToWarehouseB = new Route(factory, warehouseB, 5);
-            var factoryToPort = new Route(factory, port, 1);
-            var portToWarehouseA = new Route(port, warehouseA, 4);
-
-            _truck1 = new Vehicle();
-            _truck2 = new Vehicle();
-            _boat = new Vehicle();
-
-            factory.PutContainer(new Container(warehouseA));
-
-
-
-            // 1 Factory
-            // 1 Port
-            // 2 Warehouses
-
-            // 2 Trucks -> factory
-            // 1 Ship -> port
-
-            // factory -> port, 1h
-            // port -> warehouse A , 4h
-            // factory -> warehouse B, 5h
+            this.destinations = destinations;
+            factory = new Warehouse("Factory");
+            factory.PlaceOrders(destinations);
+            port = new Warehouse("Port");
+            warehouseA = new Warehouse("A");
+            warehouseB = new Warehouse("B");
+            var routePlanner = new RoutePlanner(new[]
+            {
+                new Route(factory, warehouseB, 5),
+                new Route(warehouseB, factory, 5),
+                new Route(factory, warehouseA, 5, new Route(factory, port, 1)),
+                new Route(port, factory, 1),
+                new Route(port, warehouseA, 4),
+                new Route(warehouseA, port, 4)
+            });
+            truck1 = new Vehicle(factory, factory, routePlanner);
+            EventPublisher.AddSubscriber<TimeTick>(truck1);
+            truck2 = new Vehicle(factory, factory, routePlanner);
+            EventPublisher.AddSubscriber<TimeTick>(truck2);
+            ship = new Vehicle(port, port, routePlanner);
+            EventPublisher.AddSubscriber<TimeTick>(ship);
+            timeTracker = new TimeTracker();
+            EventPublisher.AddSubscriber<TimeTick>(timeTracker);
         }
 
-        public int CurrentTime { get; set; } = 0;
-        public bool DelieveryIsDone()
-        {
+        public int CurrentTime => timeTracker.CurrentTime;
 
-            return warehouseA.ContainerCount + warehouseB.ContainerCount == containerToDeliever ;
-        }
         public void Deliver()
         {
-            this.Print();
-            while (!DelieveryIsDone())
+            while ((warehouseA.Inventory.Count + warehouseB.Inventory.Count) < destinations.Count())
             {
-                factory.LoadOnVehicle();
-
-
-                CurrentTime++;
+                EventPublisher.Publish(new TimeTick());
             }
-            // Loop while delivery is done
-        }
-
-        private void Print()
-        {
-            Console.WriteLine(this.CurrentTime);
-
-            // Display
-
-            Console.WriteLine(Environment.NewLine);
         }
     }
 
