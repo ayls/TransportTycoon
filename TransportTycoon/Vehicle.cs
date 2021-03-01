@@ -17,8 +17,7 @@
             CurrentLocation = currentLocation;
             this.routePlanner = routePlanner;
             CurrentOrder = null;
-            CurrentRoute = null;
-            RemainingTimeOnRoute = null;
+            SetRoute(null);
         }
 
         public void Apply(TimeTick @event)
@@ -30,7 +29,7 @@
 
             if (RemainingTimeOnRoute == 0)
             {
-                Park();
+                HandleArrival();
             }
 
             if (IsAtHome)
@@ -43,32 +42,38 @@
             }
         }
 
-        private void Park()
+        private void HandleArrival()
         {
             if (CurrentOrder != null)
             {
                 CurrentRoute!.Destination.DeliverOrder(CurrentOrder);
             }
-            CurrentLocation = CurrentRoute!.Destination;
             CurrentOrder = null;
+            CurrentLocation = CurrentRoute!.Destination;
             if (IsAtHome)
             {
-                CurrentRoute = null;
-                RemainingTimeOnRoute = null;
+                SetRoute(null);
             }
             else
             {
-                CurrentRoute = routePlanner.PlanRoute(CurrentLocation.Name, HomeLocation.Name);
-                RemainingTimeOnRoute = CurrentRoute.Duration;
+                var routeBackHome = routePlanner.PlanRoute(CurrentLocation.Name, HomeLocation.Name);
+                SetRoute(routeBackHome);
             }
         }
 
         private void LoadCargo(Order order)
         {
             CurrentOrder = order;
-            CurrentRoute = routePlanner.PlanRoute(HomeLocation.Name, order.Destination);
-            RemainingTimeOnRoute = CurrentRoute.Duration;
             CurrentLocation = null;
+            var routeToDestination = routePlanner.PlanRoute(HomeLocation.Name, order.Destination);
+            SetRoute(routeToDestination);
+
+        }
+
+        private void SetRoute(Route? route)
+        {
+            CurrentRoute = route;
+            RemainingTimeOnRoute = route?.Duration;
         }
     }
 }
